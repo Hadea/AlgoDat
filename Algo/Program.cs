@@ -14,9 +14,10 @@ namespace Algo
             Console.WriteLine("\nNun das Sortierte :D");
             DateTime startTime = DateTime.Now;
             //SelectionSort(ArrayToSort);
-            byte[] buffer = MergeSort(ArrayToSort);
+            //byte[] buffer = MergeSort(ArrayToSort);
+            MergeSortScratch(ArrayToSort);
             DateTime endTime = DateTime.Now;
-            if (ArrayToSort.Length < 15) foreach (var item in buffer) Console.Write(" " + item);
+            if (ArrayToSort.Length < 15) foreach (var item in ArrayToSort) Console.Write(" " + item);
             Console.WriteLine("\nDas Sortieren dauerte " + (endTime - startTime).TotalMilliseconds);
             Console.ReadLine();
         }
@@ -48,7 +49,7 @@ namespace Algo
         static byte[] MergeSort(byte[] ArrayToSort)
         {
             // 134,8332 bei 100k
-
+            // 72353,0138 bei 100m unboosted
 
             // ################# DIVIDE #################
             if (ArrayToSort.Length <= 1) return ArrayToSort;
@@ -70,14 +71,61 @@ namespace Algo
                 else
                     result[resultID++] = leftSide[leftID++];
 
-            for (; leftID < leftSide.Length; leftID++)
-                result[resultID++] = leftSide[leftID];
+            while (leftID < leftSide.Length)
+                result[resultID++] = leftSide[leftID++];
 
             while (rightID < rightSide.Length)
                 result[resultID++] = rightSide[rightID++];
 
             return result;
-
         }
+
+
+        static void MergeSortScratch(byte[] ArrayToSort)
+        {
+            MergeSortScratchWorker(ArrayToSort, new byte[ArrayToSort.Length], 0, ArrayToSort.Length - 1);
+        }
+        static void MergeSortScratchWorker(byte[] ArrayToSort, byte[] ScratchArray, int FirstElement, int LastElement)
+        {
+            //  46552,515 bei 100M unboosted
+            // ################# DIVIDE #####################
+            if (FirstElement == LastElement) return;
+
+            int splitPoint = (LastElement - FirstElement) / 2 + FirstElement;
+            int rightPointer = splitPoint + 1;
+
+            MergeSortScratchWorker(ArrayToSort, ScratchArray, FirstElement, splitPoint);
+            MergeSortScratchWorker(ArrayToSort, ScratchArray, rightPointer, LastElement);
+
+            // ################ CONQUER #####################
+
+            int leftPointer = FirstElement;
+            int scratchPointer = leftPointer;
+
+            // zusammenführen
+
+            while (leftPointer <= splitPoint && rightPointer <= LastElement)
+            {
+                if (ArrayToSort[rightPointer] < ArrayToSort[leftPointer])
+                    ScratchArray[scratchPointer++] = ArrayToSort[rightPointer++];
+                else
+                    ScratchArray[scratchPointer++] = ArrayToSort[leftPointer++];
+            }
+
+            // reste links
+
+            while (leftPointer <= splitPoint)
+                    ScratchArray[scratchPointer++] = ArrayToSort[leftPointer++];
+
+            // reste rechts
+            while(rightPointer <= LastElement)
+                    ScratchArray[scratchPointer++] = ArrayToSort[rightPointer++];
+
+            // ins original kopieren
+
+            for (int counter = FirstElement; counter <= LastElement; counter++)
+                ArrayToSort[counter] = ScratchArray[counter];
+        }
+
     }
 }
