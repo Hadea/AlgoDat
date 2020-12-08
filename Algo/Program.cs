@@ -7,7 +7,7 @@ namespace Algo
     {
         static void Main()
         {
-            byte[] ArrayToSort = new byte[100000000];
+            byte[] ArrayToSort = new byte[14];
             Random rndGen = new Random();
             rndGen.NextBytes(ArrayToSort);
             rndGen = null;
@@ -18,7 +18,7 @@ namespace Algo
             DateTime startTime = DateTime.Now;
             //SelectionSort(ArrayToSort);
             //byte[] buffer = MergeSort(ArrayToSort);
-            //MergeSortScratch(ArrayToSort);
+            MergeSortScratch(ArrayToSort);
             MapSort(ArrayToSort);
             DateTime endTime = DateTime.Now;
             if (ArrayToSort.Length < 15) foreach (var item in ArrayToSort) Console.Write(" " + item);
@@ -84,29 +84,31 @@ namespace Algo
             return result;
         }
 
-
         static void MergeSortScratch(byte[] ArrayToSort)
         {
-            MergeSortScratchWorker(ArrayToSort, new byte[ArrayToSort.Length], 0, ArrayToSort.Length - 1);
+            MergeSortScratchWorker(ArrayToSort, new byte[ArrayToSort.Length], 0, ArrayToSort.Length - 1, ArrayToSort.Length/2);
         }
-        static void MergeSortScratchWorker(byte[] ArrayToSort, byte[] ScratchArray, int FirstElement, int LastElement)
+        static void MergeSortScratchWorker(byte[] ArrayToSort, byte[] ScratchArray, int FirstElement, int LastElement, int splitPoint)
         {
             // 46552,515 bei 100M unboosted
             // 11568,4818 bei 100M mit GC, boost und release
             // ################# DIVIDE #####################
             if (FirstElement == LastElement) return;
-
-            int splitPoint = (LastElement - FirstElement) / 2 + FirstElement;
             int rightPointer = splitPoint + 1;
 
-            MergeSortScratchWorker(ArrayToSort, ScratchArray, FirstElement, splitPoint);
-            MergeSortScratchWorker(ArrayToSort, ScratchArray, rightPointer, LastElement);
+            MergeSortScratchWorker(ArrayToSort, ScratchArray, FirstElement, splitPoint, (splitPoint - FirstElement) / 2 + FirstElement);
+            MergeSortScratchWorker(ArrayToSort, ScratchArray, rightPointer, LastElement, (LastElement - rightPointer) / 2 + rightPointer);
 
+            MergeSortScratchWorkerMerge(ArrayToSort, ScratchArray, FirstElement, LastElement, splitPoint);
+
+        }
+        static void MergeSortScratchWorkerMerge(byte[] ArrayToSort, byte[] ScratchArray, int FirstElement, int LastElement, int splitPoint)
+        {
             // ################ CONQUER #####################
 
             int leftPointer = FirstElement;
             int scratchPointer = leftPointer;
-
+            int rightPointer = splitPoint + 1;
             // zusammenführen
 
             while (leftPointer <= splitPoint && rightPointer <= LastElement)
@@ -120,11 +122,11 @@ namespace Algo
             // reste links
 
             while (leftPointer <= splitPoint)
-                    ScratchArray[scratchPointer++] = ArrayToSort[leftPointer++];
+                ScratchArray[scratchPointer++] = ArrayToSort[leftPointer++];
 
             // reste rechts
-            while(rightPointer <= LastElement)
-                    ScratchArray[scratchPointer++] = ArrayToSort[rightPointer++];
+            while (rightPointer <= LastElement)
+                ScratchArray[scratchPointer++] = ArrayToSort[rightPointer++];
 
             // ins original kopieren
 
@@ -137,7 +139,7 @@ namespace Algo
             //  693,9298 bei 100M debug boosted
 
             // array aller möglichen werte erstellen
-            int[] elementOccurance = new int[Byte.MaxValue+1];
+            int[] elementOccurance = new int[Byte.MaxValue + 1];
 
             // original durchgehen und vorkommen der werte zählen
             for (int counter = 0; counter < ArrayToSort.Length; counter++)
@@ -153,5 +155,28 @@ namespace Algo
                 }
             }
         }
+
+        static void MergeSortThreaded(byte[] ArrayToSort)
+        {
+            //aufteilen auf power of two arrays, maximal aber anzahl der Kerne des Prozessors
+            int blockLength = ArrayToSort.Length / 4; //Environment.ProcessorCount; //?
+
+            // normalen merge sort auf 4 unterschiedlichen bereichen starten, jeweils in einem thread
+            byte[] scratch = new byte[ArrayToSort.Length];
+
+            //MergeSortScratchWorker(ArrayToSort, scratch, 0, ArrayToSort.Length / 4, ArrayToSort.Length / 4 / 2);
+            //MergeSortScratchWorker(ArrayToSort, scratch, ArrayToSort.Length / 4 + 1, ArrayToSort.Length / 2);
+            //MergeSortScratchWorker(ArrayToSort, scratch, ArrayToSort.Length / 2 + 1, ArrayToSort.Length / 4 * 3);
+            //MergeSortScratchWorker(ArrayToSort, scratch, ArrayToSort.Length / 4 * 3 + 1, ArrayToSort.Length - 1);
+            //
+            //// die 4 sortierten teilarrays zusammenführen
+            //
+            //MergeSortScratchWorkerMerge(ArrayToSort, scratch, 0, ArrayToSort.Length / 2);
+            //MergeSortScratchWorkerMerge(ArrayToSort, scratch, ArrayToSort.Length / 2 + 1, ArrayToSort.Length - 1);
+            //
+            //MergeSortScratchWorkerMerge(ArrayToSort, scratch, 0, ArrayToSort.Length - 1);
+        }
+
+
     }
 }
