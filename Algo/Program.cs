@@ -10,12 +10,16 @@ namespace Algo
             byte[] ArrayToSort = new byte[100000000];
             Random rndGen = new Random();
             rndGen.NextBytes(ArrayToSort);
+            rndGen = null;
             if (ArrayToSort.Length < 15) foreach (var item in ArrayToSort) Console.Write(" " + item);
             Console.WriteLine("\nNun das Sortierte :D");
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
             DateTime startTime = DateTime.Now;
             //SelectionSort(ArrayToSort);
             //byte[] buffer = MergeSort(ArrayToSort);
-            MergeSortScratch(ArrayToSort);
+            //MergeSortScratch(ArrayToSort);
+            MapSort(ArrayToSort);
             DateTime endTime = DateTime.Now;
             if (ArrayToSort.Length < 15) foreach (var item in ArrayToSort) Console.Write(" " + item);
             Console.WriteLine("\nDas Sortieren dauerte " + (endTime - startTime).TotalMilliseconds);
@@ -87,7 +91,8 @@ namespace Algo
         }
         static void MergeSortScratchWorker(byte[] ArrayToSort, byte[] ScratchArray, int FirstElement, int LastElement)
         {
-            //  46552,515 bei 100M unboosted
+            // 46552,515 bei 100M unboosted
+            // 11568,4818 bei 100M mit GC, boost und release
             // ################# DIVIDE #####################
             if (FirstElement == LastElement) return;
 
@@ -127,5 +132,26 @@ namespace Algo
                 ArrayToSort[counter] = ScratchArray[counter];
         }
 
+        static void MapSort(byte[] ArrayToSort) //keine ahnung ob der Name passt
+        {
+            //  693,9298 bei 100M debug boosted6
+
+            // array aller möglichen werte erstellen
+            int[] elementOccurance = new int[Byte.MaxValue+1];
+
+            // original durchgehen und vorkommen der werte zählen
+            for (int counter = 0; counter < ArrayToSort.Length; counter++)
+                elementOccurance[ArrayToSort[counter]]++;
+
+            // originalarray anhand des Zählarrays wieder aufbauen
+            int origPointer = 0;
+            for (int occurance = 0; occurance < elementOccurance.Length; occurance++)
+            {
+                for (int counter = 0; counter < elementOccurance[occurance]; counter++)
+                {
+                    ArrayToSort[origPointer++] = (byte)occurance;
+                }
+            }
+        }
     }
 }
