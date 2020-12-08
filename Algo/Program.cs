@@ -134,7 +134,7 @@ namespace Algo
 
         static void MapSort(byte[] ArrayToSort) //keine ahnung ob der Name passt
         {
-            //  693,9298 bei 100M debug boosted6
+            //  693,9298 bei 100M debug boosted
 
             // array aller möglichen werte erstellen
             int[] elementOccurance = new int[Byte.MaxValue+1];
