@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace Algo
 {
@@ -7,7 +8,7 @@ namespace Algo
     {
         static void Main()
         {
-            byte[] ArrayToSort = new byte[14];
+            byte[] ArrayToSort = new byte[100000000];
             Random rndGen = new Random();
             rndGen.NextBytes(ArrayToSort);
             rndGen = null;
@@ -18,11 +19,22 @@ namespace Algo
             DateTime startTime = DateTime.Now;
             //SelectionSort(ArrayToSort);
             //byte[] buffer = MergeSort(ArrayToSort);
-            MergeSortScratch(ArrayToSort);
-            MapSort(ArrayToSort);
+            //MergeSortScratch(ArrayToSort);
+            //MapSort(ArrayToSort);
+            MergeSortThreaded(ArrayToSort);
             DateTime endTime = DateTime.Now;
             if (ArrayToSort.Length < 15) foreach (var item in ArrayToSort) Console.Write(" " + item);
             Console.WriteLine("\nDas Sortieren dauerte " + (endTime - startTime).TotalMilliseconds);
+            for (int counter = 0; counter < ArrayToSort.Length - 1; counter++)
+            {
+                if (ArrayToSort[counter] > ArrayToSort[counter+1])
+                {
+                    Console.WriteLine("error");
+                    Console.ReadLine();
+                    return;
+                }
+            }
+
             Console.ReadLine();
         }
 
@@ -86,7 +98,7 @@ namespace Algo
 
         static void MergeSortScratch(byte[] ArrayToSort)
         {
-            MergeSortScratchWorker(ArrayToSort, new byte[ArrayToSort.Length], 0, ArrayToSort.Length - 1, ArrayToSort.Length/2);
+            MergeSortScratchWorker(ArrayToSort, new byte[ArrayToSort.Length], 0, ArrayToSort.Length - 1, ArrayToSort.Length / 2);
         }
         static void MergeSortScratchWorker(byte[] ArrayToSort, byte[] ScratchArray, int FirstElement, int LastElement, int splitPoint)
         {
@@ -158,23 +170,34 @@ namespace Algo
 
         static void MergeSortThreaded(byte[] ArrayToSort)
         {
+            // 30494,7437 bei 100M debug, boost, singlethread
+            // 16947,968 bei 100M debug, boost, dualthreaded
+            // 10099,9445 bei 100M debug, boost, quadthreaded
+            //  9441,0841 bei 100M debug, boost, quadthreaded/dualmerge
+
             //aufteilen auf power of two arrays, maximal aber anzahl der Kerne des Prozessors
-            int blockLength = ArrayToSort.Length / 4; //Environment.ProcessorCount; //?
 
             // normalen merge sort auf 4 unterschiedlichen bereichen starten, jeweils in einem thread
             byte[] scratch = new byte[ArrayToSort.Length];
 
-            //MergeSortScratchWorker(ArrayToSort, scratch, 0, ArrayToSort.Length / 4, ArrayToSort.Length / 4 / 2);
-            //MergeSortScratchWorker(ArrayToSort, scratch, ArrayToSort.Length / 4 + 1, ArrayToSort.Length / 2);
-            //MergeSortScratchWorker(ArrayToSort, scratch, ArrayToSort.Length / 2 + 1, ArrayToSort.Length / 4 * 3);
-            //MergeSortScratchWorker(ArrayToSort, scratch, ArrayToSort.Length / 4 * 3 + 1, ArrayToSort.Length - 1);
-            //
-            //// die 4 sortierten teilarrays zusammenführen
-            //
-            //MergeSortScratchWorkerMerge(ArrayToSort, scratch, 0, ArrayToSort.Length / 2);
-            //MergeSortScratchWorkerMerge(ArrayToSort, scratch, ArrayToSort.Length / 2 + 1, ArrayToSort.Length - 1);
-            //
-            //MergeSortScratchWorkerMerge(ArrayToSort, scratch, 0, ArrayToSort.Length - 1);
+            Parallel.Invoke(
+            ()=>MergeSortScratchWorker(ArrayToSort, scratch, 0, ArrayToSort.Length / 8 * 2, ArrayToSort.Length / 8),
+            ()=>MergeSortScratchWorker(ArrayToSort, scratch, ArrayToSort.Length / 8 * 2 + 1, ArrayToSort.Length / 8 * 4, GetSplitPoint(ArrayToSort.Length / 8 * 2 + 1, ArrayToSort.Length / 8 * 4)),
+            ()=>MergeSortScratchWorker(ArrayToSort, scratch, ArrayToSort.Length / 8 * 4 + 1, ArrayToSort.Length / 8 * 6, GetSplitPoint(ArrayToSort.Length / 8 * 4 + 1, ArrayToSort.Length / 8 * 6)),
+            ()=>MergeSortScratchWorker(ArrayToSort, scratch, ArrayToSort.Length / 8 * 6 + 1, ArrayToSort.Length - 1, GetSplitPoint(ArrayToSort.Length / 8 * 6 + 1, ArrayToSort.Length - 1))
+            );
+            // die 4 sortierten teilarrays zusammenführen
+
+            Parallel.Invoke(
+            () => MergeSortScratchWorkerMerge(ArrayToSort, scratch,                          0, ArrayToSort.Length / 8 * 4, GetSplitPoint(0, ArrayToSort.Length/8*4)),
+            () => MergeSortScratchWorkerMerge(ArrayToSort, scratch, ArrayToSort.Length / 8 * 4+1, ArrayToSort.Length - 1, GetSplitPoint(ArrayToSort.Length/8*4+1, ArrayToSort.Length-1 ))
+            );
+            MergeSortScratchWorkerMerge(ArrayToSort, scratch, 0, ArrayToSort.Length - 1, ArrayToSort.Length / 8 * 4);
+
+            int GetSplitPoint(int first, int last)
+            {
+                return (last - first) / 2+ first;
+            }
         }
 
 
