@@ -1,9 +1,9 @@
 ﻿namespace Dat
 {
-    public class LinkedListElement
+    public class LinkedListElement<PlaceHolderForDataType>
     {
-        public LinkedListElement Prev;
-        public LinkedListElement Next;
-        public int Data;
+        public LinkedListElement<PlaceHolderForDataType> Prev;
+        public LinkedListElement<PlaceHolderForDataType> Next;
+        public PlaceHolderForDataType Data;
     }
 }

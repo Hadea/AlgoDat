@@ -2,15 +2,15 @@
 
 namespace Dat
 {
-    public class LinkedList
+    public class LinkedList<PlaceHolderForDataType>
     {
         public int Count { get; private set; }
-        private LinkedListElement Head;
-        private LinkedListElement Tail;
+        private LinkedListElement<PlaceHolderForDataType> Head;
+        private LinkedListElement<PlaceHolderForDataType> Tail;
 
-        public void AddFirst(int Value)
+        public void AddFirst(PlaceHolderForDataType Value)
         {
-            LinkedListElement newElement = new();
+            LinkedListElement<PlaceHolderForDataType> newElement = new();
             newElement.Data = Value;
             if (Head == null)
             {
@@ -31,9 +31,9 @@ namespace Dat
             Count++;
         }
 
-        public void AddLast(int Value)
+        public void AddLast(PlaceHolderForDataType Value)
         {
-            LinkedListElement newElement = new();
+            LinkedListElement<PlaceHolderForDataType> newElement = new();
             newElement.Data = Value;
             if (Head == null)
             {
@@ -62,7 +62,7 @@ namespace Dat
                 if (Tail.Prev != null)
                 {
                     // es gibt mehr als eins
-                    LinkedListElement toDelete = Tail;
+                    LinkedListElement<PlaceHolderForDataType> toDelete = Tail;
                     Tail = toDelete.Prev;
                     Tail.Next = null;
                     toDelete.Prev = null;
@@ -83,12 +83,12 @@ namespace Dat
             }
         }
 
-        public ref int At(int Index)
+        public ref PlaceHolderForDataType At(int Index)
         {
             if (Count <= Index)
                 throw new IndexOutOfRangeException();
 
-            LinkedListElement buffer = Head;
+            LinkedListElement<PlaceHolderForDataType> buffer = Head;
             for (int counter = 0; counter < Index; counter++)
             {
                 buffer = buffer.Next;
@@ -105,7 +105,7 @@ namespace Dat
                 if (Head.Next != null)
                 {
                     // es gibt mehr als eins
-                    LinkedListElement toDelete = Head;
+                    LinkedListElement<PlaceHolderForDataType> toDelete = Head;
                     Head = toDelete.Next;
                     Head.Prev = null;
                     toDelete.Next = null;
