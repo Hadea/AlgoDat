@@ -11,8 +11,8 @@ namespace Test
         public void Add()
         {
             // vorbereitung
-            LinkedList ll = new LinkedList();
-            
+            LinkedList<int> ll = new LinkedList<int>();
+
             // durchführung
             ll.AddFirst(22);
 
@@ -24,7 +24,7 @@ namespace Test
         [TestMethod]
         public void Remove()
         {
-            LinkedList ll = new();
+            LinkedList<int> ll = new();
 
             ll.AddFirst(22);
             ll.AddFirst(33);
@@ -45,5 +45,35 @@ namespace Test
         {
 
         }
+    }
+
+    [TestClass]
+    public class QuadTreeTests
+    {
+        [TestMethod]
+        public void Add()
+        {
+            Dat.QuadTree<GameObject> ot = new();
+
+            ot.Add((1, 1), new GameObject());
+
+
+        }
+        [TestMethod]
+        public void Remove()
+        {
+
+        }
+        [TestMethod]
+        public void Find()
+        {
+
+        }
+
+
+    }
+    class GameObject
+    {
+
     }
 }
