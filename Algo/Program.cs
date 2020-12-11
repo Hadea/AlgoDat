@@ -8,34 +8,41 @@ namespace Algo
     {
         static void Main()
         {
-            byte[] ArrayToSort = new byte[100000000];
+            byte[] ArrayToSort = new byte[2000];
             Random rndGen = new Random();
+            TimeSpan fullElapsedTime = TimeSpan.Zero;
             rndGen.NextBytes(ArrayToSort);
-            rndGen = null;
-            if (ArrayToSort.Length < 15) foreach (var item in ArrayToSort) Console.Write(" " + item);
-            Console.WriteLine("\nNun das Sortierte :D");
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            DateTime startTime = DateTime.Now;
             //SelectionSort(ArrayToSort);
-            //byte[] buffer = MergeSort(ArrayToSort);
             //MergeSortScratch(ArrayToSort);
-            //MapSort(ArrayToSort);
-            MergeSortThreaded(ArrayToSort);
-            DateTime endTime = DateTime.Now;
-            if (ArrayToSort.Length < 15) foreach (var item in ArrayToSort) Console.Write(" " + item);
-            Console.WriteLine("\nDas Sortieren dauerte " + (endTime - startTime).TotalMilliseconds);
-            for (int counter = 0; counter < ArrayToSort.Length - 1; counter++)
+            //MergeSortThreaded(ArrayToSort);
+            MergeSortV2threaded(ArrayToSort);
+            for (int repeat = 0; repeat < 1000; repeat++)
             {
-                if (ArrayToSort[counter] > ArrayToSort[counter+1])
+                rndGen.NextBytes(ArrayToSort);
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                DateTime startTime = DateTime.Now;
+                //SelectionSort(ArrayToSort);
+                //byte[] buffer = MergeSort(ArrayToSort);
+                //MergeSortScratch(ArrayToSort);
+                //MapSort(ArrayToSort);
+                //MergeSortThreaded(ArrayToSort);
+                MergeSortV2threaded(ArrayToSort);
+                DateTime endTime = DateTime.Now;
+                fullElapsedTime += (endTime - startTime);
+                for (int counter = 0; counter < ArrayToSort.Length - 1; counter++)
                 {
-                    Console.WriteLine("error");
-                    Console.ReadLine();
-                    return;
+                    if (ArrayToSort[counter] > ArrayToSort[counter + 1])
+                    {
+                        Console.WriteLine("error");
+                        Console.ReadLine();
+                        return;
+                    }
                 }
             }
-
+            Console.WriteLine("\nDas Sortieren von {1} Elementen dauerte {0}", fullElapsedTime.TotalMilliseconds / 1000, ArrayToSort.Length);
             Console.ReadLine();
+
         }
 
         static void SelectionSort(byte[] ArrayToSort)
@@ -170,6 +177,7 @@ namespace Algo
 
         static void MergeSortThreaded(byte[] ArrayToSort)
         {
+            throw new NotImplementedException("Unsafe with array length below 1500, do not use! ");
             // 30494,7437 bei 100M debug, boost, singlethread
             // 16947,968 bei 100M debug, boost, dualthreaded
             // 10099,9445 bei 100M debug, boost, quadthreaded
@@ -181,23 +189,110 @@ namespace Algo
             byte[] scratch = new byte[ArrayToSort.Length];
 
             Parallel.Invoke(
-            ()=>MergeSortScratchWorker(ArrayToSort, scratch, 0, ArrayToSort.Length / 8 * 2, ArrayToSort.Length / 8),
-            ()=>MergeSortScratchWorker(ArrayToSort, scratch, ArrayToSort.Length / 8 * 2 + 1, ArrayToSort.Length / 8 * 4, GetSplitPoint(ArrayToSort.Length / 8 * 2 + 1, ArrayToSort.Length / 8 * 4)),
-            ()=>MergeSortScratchWorker(ArrayToSort, scratch, ArrayToSort.Length / 8 * 4 + 1, ArrayToSort.Length / 8 * 6, GetSplitPoint(ArrayToSort.Length / 8 * 4 + 1, ArrayToSort.Length / 8 * 6)),
-            ()=>MergeSortScratchWorker(ArrayToSort, scratch, ArrayToSort.Length / 8 * 6 + 1, ArrayToSort.Length - 1, GetSplitPoint(ArrayToSort.Length / 8 * 6 + 1, ArrayToSort.Length - 1))
+            () => MergeSortScratchWorker(ArrayToSort, scratch, 0, ArrayToSort.Length / 8 * 2, ArrayToSort.Length / 8),
+            () => MergeSortScratchWorker(ArrayToSort, scratch, ArrayToSort.Length / 8 * 2 + 1, ArrayToSort.Length / 8 * 4, GetSplitPoint(ArrayToSort.Length / 8 * 2 + 1, ArrayToSort.Length / 8 * 4)),
+            () => MergeSortScratchWorker(ArrayToSort, scratch, ArrayToSort.Length / 8 * 4 + 1, ArrayToSort.Length / 8 * 6, GetSplitPoint(ArrayToSort.Length / 8 * 4 + 1, ArrayToSort.Length / 8 * 6)),
+            () => MergeSortScratchWorker(ArrayToSort, scratch, ArrayToSort.Length / 8 * 6 + 1, ArrayToSort.Length - 1, GetSplitPoint(ArrayToSort.Length / 8 * 6 + 1, ArrayToSort.Length - 1))
             );
             // die 4 sortierten teilarrays zusammenführen
 
             Parallel.Invoke(
-            () => MergeSortScratchWorkerMerge(ArrayToSort, scratch,                          0, ArrayToSort.Length / 8 * 4, GetSplitPoint(0, ArrayToSort.Length/8*4)),
-            () => MergeSortScratchWorkerMerge(ArrayToSort, scratch, ArrayToSort.Length / 8 * 4+1, ArrayToSort.Length - 1, GetSplitPoint(ArrayToSort.Length/8*4+1, ArrayToSort.Length-1 ))
+            () => MergeSortScratchWorkerMerge(ArrayToSort, scratch, 0, ArrayToSort.Length / 8 * 4, GetSplitPoint(0, ArrayToSort.Length / 8 * 4)),
+            () => MergeSortScratchWorkerMerge(ArrayToSort, scratch, ArrayToSort.Length / 8 * 4 + 1, ArrayToSort.Length - 1, GetSplitPoint(ArrayToSort.Length / 8 * 4 + 1, ArrayToSort.Length - 1))
             );
             MergeSortScratchWorkerMerge(ArrayToSort, scratch, 0, ArrayToSort.Length - 1, ArrayToSort.Length / 8 * 4);
 
             int GetSplitPoint(int first, int last)
             {
-                return (last - first) / 2+ first;
+                return (last - first) / 2 + first;
             }
+        }
+
+        static void Sort(byte[] ArrayToSort)
+        {
+            if (ArrayToSort.Length < 100)
+            {
+                SelectionSort(ArrayToSort);
+            }
+            else if (ArrayToSort.Length < 2000)
+            {
+                MergeSortScratch(ArrayToSort);
+            }
+            else
+            {
+                MergeSortV2threaded(ArrayToSort);
+            }
+        }
+
+
+        static void MergeSortV2threaded(byte[] ArrayToSort)
+        {
+            byte[] scratchArray = new byte[ArrayToSort.Length];
+            int segmentGroesse = ArrayToSort.Length / 4;
+            Parallel.Invoke(
+                () => MergeSortV2Split(ArrayToSort, scratchArray, segmentGroesse * 0, segmentGroesse * 1 - 1),
+                () => MergeSortV2Split(ArrayToSort, scratchArray, segmentGroesse * 1, segmentGroesse * 2 - 1),
+                () => MergeSortV2Split(ArrayToSort, scratchArray, segmentGroesse * 2, segmentGroesse * 3 - 1),
+                () => MergeSortV2Split(ArrayToSort, scratchArray, segmentGroesse * 3, ArrayToSort.Length - 1));
+
+            Parallel.Invoke(
+                () => MergeSortV2Merge(ArrayToSort, scratchArray, segmentGroesse * 0, segmentGroesse * 1 - 1, segmentGroesse * 1, segmentGroesse * 2 - 1),
+                () => MergeSortV2Merge(ArrayToSort, scratchArray, segmentGroesse * 2, segmentGroesse * 3 - 1, segmentGroesse * 3, ArrayToSort.Length - 1));
+
+            MergeSortV2Merge(ArrayToSort, scratchArray, segmentGroesse * 0, segmentGroesse * 2 - 1, segmentGroesse * 2, ArrayToSort.Length - 1);
+
+        }
+
+        static void MergeSortV2Split(byte[] ArrayToSort, byte[] ScratchArray, int pBeginInclusive, int pEndInvlusive)
+        {
+            if (pEndInvlusive - pBeginInclusive > 0)
+            {
+                int splitPoint = (pEndInvlusive + 1 - pBeginInclusive) / 2 + pBeginInclusive;
+                MergeSortV2Split(ArrayToSort, ScratchArray, pBeginInclusive, splitPoint - 1);
+                MergeSortV2Split(ArrayToSort, ScratchArray, splitPoint, pEndInvlusive);
+                MergeSortV2Merge(ArrayToSort, ScratchArray, pBeginInclusive, splitPoint - 1, splitPoint, pEndInvlusive);
+            }
+        }
+
+
+        static void MergeSortV2Merge(byte[] ArrayToSort, byte[] ScratchArray, int pLinksAnfang, int pLinksEnde, int pRechtsAnfang, int pRechtsEnde) // Conquer
+        {
+
+            int posLeft = pLinksAnfang;
+            int posRight = pRechtsAnfang;
+            int scratchPointer = pLinksAnfang;
+
+            while (posLeft <= pLinksEnde && posRight <= pRechtsEnde)
+            {
+                if (ArrayToSort[posLeft] < ArrayToSort[posRight])
+                {
+                    ScratchArray[scratchPointer] = ArrayToSort[posLeft];
+                    ++posLeft;
+                    ++scratchPointer;
+                }
+                else
+                {
+                    ScratchArray[scratchPointer] = ArrayToSort[posRight];
+                    ++posRight;
+                    ++scratchPointer;
+                }
+            }
+
+            while (posLeft <= pLinksEnde)
+            {
+                ScratchArray[scratchPointer] = ArrayToSort[posLeft];
+                ++scratchPointer;
+                ++posLeft;
+            }
+
+            while (posRight <= pRechtsEnde)
+            {
+                ScratchArray[scratchPointer] = ArrayToSort[posRight];
+                ++scratchPointer;
+                ++posRight;
+            }
+
+            Array.Copy(ScratchArray, pLinksAnfang, ArrayToSort, pLinksAnfang, pRechtsEnde - pLinksAnfang + 1);
         }
 
 
